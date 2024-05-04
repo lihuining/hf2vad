@@ -24,9 +24,9 @@ def train(config, training_chunked_samples_dir, testing_chunked_samples_file):
     if not os.path.exists(paths["log_dir"]):
         os.makedirs(paths["log_dir"])
 
-    batch_size = config["batchsize"]
-    epochs = config["num_epochs"]
-    num_workers = config["num_workers"]
+    batch_size = config["batchsize"] # 256
+    epochs = config["num_epochs"] # 80
+    num_workers = config["num_workers"] # 8
     device = config["device"]
 
     training_chunk_samples_files = sorted(os.listdir(training_chunked_samples_dir))
@@ -73,7 +73,7 @@ def train(config, training_chunked_samples_dir, testing_chunked_samples_file):
                                         total=len(dataloader)):
                 model.train()
 
-                _, sample_ofs, _, _, _ = train_data
+                _, sample_ofs, _, _, _ = train_data # sample_ofs：flow ，（256,2,32,32）
                 sample_ofs = sample_ofs.to(device)
 
                 out = model(sample_ofs)
@@ -141,7 +141,11 @@ if __name__ == '__main__':
     dataset_name = config["dataset_name"]
     dataset_base_dir = config["dataset_base_dir"]
     training_chunked_samples_dir = os.path.join(dataset_base_dir, dataset_name, "training/chunked_samples")
-    testing_chunked_samples_file = os.path.join(dataset_base_dir, dataset_name,
-                                                "testing/chunked_samples/chunked_samples_00.pkl")
+    testing_chunked_samples_file = os.path.join(dataset_base_dir, dataset_name,"testing/chunked_samples/chunked_samples_00.pkl")
 
     train(config, training_chunked_samples_dir, testing_chunked_samples_file)
+
+'''
+python ml_memAE_sc_train.py
+16：58开始
+'''

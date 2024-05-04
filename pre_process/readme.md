@@ -66,6 +66,15 @@ Please install the [mmcv](https://github.com/open-mmlab/mmcv) and [mmdetection](
 then download the cascade RCNN pretrained weights 
 (we use `cascade_rcnn_r101_fpn_1x_coco_20200317-0b6a2fbf.pth`) and place it in `pre_porocess/assets` folder.
 
+mmdet版本Version: 2.25.3报错
+AttributeError: 'ConfigDict' object has no attribute 'nms'
+
+解决办法：pre_process/assets/latest_version_cascade_rcnn_r101_fpn_1x.py当中添加
+![img.png](img.png)
+'''
+nms=dict(type='nms', iou_threshold=0.7),
+max_per_img=100,
+'''
 Run the following command to detect all the foreground objects. 
 ```python
 $ python extract_bboxes.py [--proj_root] [--dataset_name] [--mode] 

@@ -55,7 +55,7 @@ class ML_MemAE_SC(nn.Module):
         self.seq_len = seq_len
         self.num_slots = num_slots
         self.shrink_thres = shrink_thres
-        self.mem_usage = mem_usage
+        self.mem_usage = mem_usage # [False, True, True, True]，第一个位置用于占位
         self.num_mem = sum(mem_usage)
         self.skip_ops = skip_ops
 
@@ -82,15 +82,15 @@ class ML_MemAE_SC(nn.Module):
         :param x: size [bs,C*seq_len,H,W]
         :return:
         """
-        x0 = self.in_conv(x)
-        x1 = self.down_1(x0)
+        x0 = self.in_conv(x) # ch：32
+        x1 = self.down_1(x0) # down_1~3,通道数加倍，宽高减半
         x2 = self.down_2(x1)
         x3 = self.down_3(x2)
 
         if self.mem_usage[3]:
             # flatten [bs,C,H,W] --> [bs,C*H*W]
             bs, C, H, W = x3.shape
-            x3 = x3.view(bs, -1)
+            x3 = x3.view(bs, -1) # （256,4096）
             mem3_out = self.mem3(x3)
             x3 = mem3_out["out"]
             # attention weight size [bs,N], N is num_slots
@@ -136,8 +136,11 @@ class ML_MemAE_SC(nn.Module):
 
 
 if __name__ == '__main__':
-    model = ML_MemAE_SC(num_in_ch=2, seq_len=1, features_root=32, num_slots=2000, shrink_thres=1 / 2000,
+    # model = ML_MemAE_SC(num_in_ch=2, seq_len=1, features_root=32, num_slots=2000, shrink_thres=1 / 2000,
+    #                     mem_usage=[False, True, True, True], skip_ops=["none", "concat", "concat"])
+    # dummy_x = torch.rand(4, 2, 32, 32)
+    model = ML_MemAE_SC(num_in_ch=1, seq_len=1, features_root=28, num_slots=2000, shrink_thres=1 / 2000,
                         mem_usage=[False, True, True, True], skip_ops=["none", "concat", "concat"])
-    dummy_x = torch.rand(4, 2, 32, 32)
+    dummy_x = torch.rand(4, 1, 28, 28) # downsample和upsample之后数据大小不一致
     dummy_out = model(dummy_x)
     print(-1)

@@ -450,3 +450,10 @@ class VUnet(nn.Module):
 
         self.saved_tensors = dict(q_means=q_means, p_means=p_means)
         return out_img
+if __name__ == '__main__':
+    import yaml
+    config = yaml.safe_load(open("./cfgs/finetune_cfg.yaml"))
+    model = VUnet(config=config)
+    dummy_x = torch.rand(4, 2, 32, 32)
+    dummy_out = model(dummy_x)
+    print(dummy_out.shape)

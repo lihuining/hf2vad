@@ -13,6 +13,7 @@ from models.mem_cvae import HFVAD
 from datasets.dataset import Chunked_sample_dataset
 from utils.eval_utils import save_evaluation_curves
 
+
 METADATA = {
     "ped2": {
         "testing_video_num": 12,
@@ -176,7 +177,7 @@ if __name__ == '__main__':
     testing_chunked_samples_file = os.path.join("./data", config["dataset_name"],
                                                 "testing/chunked_samples/chunked_samples_00.pkl")
 
-    from train import cal_training_stats
+    from finetune import cal_training_stats
 
     os.makedirs(os.path.join("./eval", config["exp_name"]), exist_ok=True)
     training_chunked_samples_dir = os.path.join("./data", config["dataset_name"], "training/chunked_samples")

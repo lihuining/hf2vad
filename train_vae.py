@@ -227,7 +227,7 @@ def cal_training_stats(config, ckpt_path, training_chunked_samples_dir, stats_sa
 
 
 if __name__ == '__main__':
-    config = yaml.safe_load(open("./cfgs/cfg.yaml"))
+    config = yaml.safe_load(open("./cfgs/train_vae_cfg.yaml"))
     dataset_name = config["dataset_name"]
     dataset_base_dir = config["dataset_base_dir"]
     training_chunked_samples_dir = os.path.join(dataset_base_dir, dataset_name, "training/chunked_samples")

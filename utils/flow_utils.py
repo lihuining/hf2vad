@@ -204,3 +204,35 @@ def make_color_wheel():
     colorwheel[col:col + MR, 0] = 255
 
     return colorwheel
+
+from scipy.ndimage import uniform_filter
+'''
+img_flow = np.transpose(batch_flows[i], [1, 2, 0])
+# convert from cartesian to polar
+_, ang = cv2.cartToPolar(img_flow[..., 0], img_flow[..., 1])
+mag = np.sqrt(img_flow[..., 0] ** 2) + np.sqrt(img_flow[..., 1] ** 2)   # L1 Magnitudes
+mag = mag / length_y[i] if args.dataset_name == 'shanghaitech' else mag    # ShanghaiTech normalization
+velocity_cur = extract_velocity(img_flow, mag, ang, orientations=bins)
+'''
+def extract_velocity(flow, magnitude, orientation, orientations=8, motion_threshold=0.):
+    orientation *= (180 / np.pi)
+
+    cy, cx = flow.shape[:2]
+
+    orientation_histogram = np.zeros(orientations)
+    subsample = np.index_exp[cy // 2:cy:cy, cx // 2:cx:cx]
+    for i in range(orientations):
+
+        temp_ori = np.where(orientation < 360 / orientations * (i + 1),
+                            orientation, -1)
+
+        temp_ori = np.where(orientation >= 360 / orientations * i,
+                            temp_ori, -1)
+
+        cond2 = (temp_ori > -1) * (magnitude >= motion_threshold)
+        temp_mag = np.where(cond2, magnitude, 0)
+        temp_filt = uniform_filter(temp_mag, size=(cy, cx))
+
+        orientation_histogram[i] = temp_filt[subsample]
+
+    return orientation_histogram

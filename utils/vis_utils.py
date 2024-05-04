@@ -11,7 +11,7 @@ def visualize_sequences(batch, seq_len, return_fig=True):
     visualize a sequence (imgs or flows)
     """
     sequences = []
-    channels_per_frame = batch.shape[-1] // seq_len
+    channels_per_frame = batch.shape[-1] // seq_len # 通道数目
     for i in range(batch.shape[0]):
         cur_sample = batch[i]  # [H,W,channels_per_frame * seq_len]
         if channels_per_frame == 2:

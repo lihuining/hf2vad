@@ -5,7 +5,8 @@ import cv2
 import os
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-
+import sys
+sys.path.insert(0,"/media/allenyljiang/564AFA804AFA5BE5/Codes/hf2vad")
 from datasets.dataset import get_dataset
 from pre_process.flownet_networks.flownet2_models import FlowNet2
 
@@ -17,7 +18,7 @@ def extracting_flows(dataset, dataset_name, of_save_dir):
     WIDTH, HEIGHT = FLOWNET_INPUT_WIDTH[dataset_name], FLOWNET_INPUT_HEIGHT[dataset_name]
 
     flownet2 = FlowNet2()
-    path = 'assets/FlowNet2_checkpoint.pth.tar'
+    path = '/media/allenyljiang/564AFA804AFA5BE5/Codes/hf2vad/pre_process/assets/FlowNet2_checkpoint.pth.tar'
     pretrained_dict = torch.load(path)['state_dict']
     model_dict = flownet2.state_dict()
     pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
@@ -35,6 +36,9 @@ def extracting_flows(dataset, dataset_name, of_save_dir):
         video_of_path = os.path.join(of_save_dir, cur_img_addr.split('/')[-2])
         if os.path.exists(video_of_path) is False:
             os.makedirs(video_of_path, exist_ok=True)
+
+        if os.path.isfile(os.path.join(video_of_path, cur_img_name + '.npy')):
+            continue
 
         # batch [bs,#frames,3,h,w]
         cur_imgs = np.transpose(batch[0].numpy(), [0, 2, 3, 1])  # [#frames,3,h,w] -> [#frames,h,w,3]
@@ -59,7 +63,7 @@ def extracting_flows(dataset, dataset_name, of_save_dir):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--proj_root", type=str, default="/home/liuzhian/hdd4T/code/hf2vad", help='project root path')
+    parser.add_argument("--proj_root", type=str, default="/media/allenyljiang/564AFA804AFA5BE5/Codes/hf2vad", help='project root path')
     parser.add_argument("--dataset_name", type=str, default="ped2", help='dataset name')
     parser.add_argument("--mode", type=str, default="train", help='train or test data')
 
@@ -74,3 +78,8 @@ if __name__ == '__main__':
 
     with torch.no_grad():
         extracting_flows(dataset, dataset_name=args.dataset_name, of_save_dir=of_save_dir)
+
+
+'''
+$ python extract_flows.py --proj_root=<path/to/project_root> --dataset_name=ped2 --mode=train
+'''

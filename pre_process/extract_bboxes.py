@@ -4,11 +4,15 @@ import argparse
 import cv2
 import torch
 from tqdm import tqdm
+import sys
+sys.path.insert(0,"/media/allenyljiang/564AFA804AFA5BE5/Codes/hf2vad")
+# sys.path.append("..")
 from datasets.dataset import get_dataset, img_tensor2numpy, img_batch_tensor2numpy
 from pre_process.mmdet_utils import init_detector, inference_detector
 
 torch.backends.cudnn.benchmark = True
 torch.backends.cudnn.enabled = True
+
 
 DATASET_CFGS = {
     "ped2": {"conf_thr": 0.5, "min_area": 10 * 10, "cover_thr": 0.6, "binary_thr": 18, "gauss_mask_size": 3, 'contour_min_area': 10 * 10},
@@ -116,6 +120,9 @@ def getFgBboxes(cur_img, img_batch, bboxes, dataset_name):
 
 
 def obj_bboxes_extraction(dataset_root, dataset_name, mode):
+    if os.path.isfile(os.path.join(os.path.join(dataset_root, dataset_name),'%s_bboxes_%s.npy' % (dataset_name, mode))):
+        return
+
     # mmdet config file and pre-trained model weights
     mm_det_config_file = 'assets/latest_version_cascade_rcnn_r101_fpn_1x.py'
     mm_det_ckpt_file = 'assets/cascade_rcnn_r101_fpn_1x_coco_20200317-0b6a2fbf.pth'
@@ -146,18 +153,21 @@ def obj_bboxes_extraction(dataset_root, dataset_name, mode):
 
         all_bboxes.append(cur_bboxes)
 
-    np.save(os.path.join(os.path.join(dataset_root, dataset_name),
-                         '%s_bboxes_%s.npy' % (dataset_name, mode)), all_bboxes)
+    np.save(os.path.join(os.path.join(dataset_root, dataset_name),'%s_bboxes_%s.npy' % (dataset_name, mode)), all_bboxes)
     print('bboxes saved!')
 
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("--proj_root", type=str, default="/home/liuzhian/hdd4T/code/hf2vad", help='project root path')
+    parser.add_argument("--proj_root", type=str, default="/media/allenyljiang/564AFA804AFA5BE5/Codes/hf2vad", help='project root path')
     parser.add_argument("--dataset_name", type=str, default="ped2", help='dataset name')
     parser.add_argument("--mode", type=str, default="train", help='train or test data')
     args = parser.parse_args()
-
     obj_bboxes_extraction(dataset_root=os.path.join(args.proj_root, "data"),
                           dataset_name=args.dataset_name,
                           mode=args.mode)
+'''
+python extract_bboxes.py [--proj_root] [--dataset_name] [--mode]
+python extract_bboxes.py --dataset_name ped2 --mode test 
+'''

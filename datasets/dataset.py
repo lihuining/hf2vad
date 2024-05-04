@@ -71,11 +71,11 @@ def bbox_collate_test(batch):
 
 def get_foreground(img, bboxes, patch_size):
     """
-    Cropping the object area according to the bouding box, and resize to patch_size
+    Cropping the object area according to the bouding box in img, and resize to patch_size
     :param img: [#frame,c,h,w]
     :param bboxes: [#,4]
     :param patch_size: 32
-    :return:
+    :return: [num_bboxes,frames_num,C,patch_size, patch_size]
     """
     img_patches = list()
     if len(img.shape) == 3:
@@ -86,7 +86,7 @@ def get_foreground(img, bboxes, patch_size):
             cur_patch = cv2.resize(np.transpose(cur_patch, [1, 2, 0]), (patch_size, patch_size))
             img_patches.append(np.transpose(cur_patch, [2, 0, 1]))
         img_patches = np.array(img_patches)
-    elif len(img.shape) == 4:
+    elif len(img.shape) == 4: # 一个batch的img
         for i in range(len(bboxes)):
             x_min, x_max = np.int(np.ceil(bboxes[i][0])), np.int(np.ceil(bboxes[i][2]))
             y_min, y_max = np.int(np.ceil(bboxes[i][1])), np.int(np.ceil(bboxes[i][3]))
@@ -122,7 +122,7 @@ class common_dataset(Dataset):
             else:
                 start_idx = indice - self.context_frame_num
             end_idx = indice
-            need_ctx_frames = self.context_frame_num + 1  # future frame prediction
+            need_ctx_frames = self.context_frame_num + 1  # 5 future frame prediction
         else:
             if indice - self.context_frame_num < 0:
                 start_idx = 0
@@ -141,12 +141,12 @@ class common_dataset(Dataset):
 
         if need_pad > 0:
             if start_idx == 0:
-                clip_frames_video_idx = [clip_frames_video_idx[0]] * need_pad + clip_frames_video_idx
+                clip_frames_video_idx = [clip_frames_video_idx[0]] * need_pad + clip_frames_video_idx # 取clip_frames_video_idx[0] pad 满足需要的帧数
             else:
-                clip_frames_video_idx = clip_frames_video_idx + [clip_frames_video_idx[-1]] * need_pad
+                clip_frames_video_idx = clip_frames_video_idx + [clip_frames_video_idx[-1]] * need_pad # 取clip_frames_video_idx[-1] pad 满足需要的帧数
 
         tmp = np.array(clip_frames_video_idx) - center_frame_video_idx
-        offset = np.sum(tmp)
+        offset = np.sum(tmp) # 保证在同一个视频当中
 
         if tmp[0] != 0 and tmp[-1] != 0:  # extreme condition that is not likely to happen
             print('The video is too short or the context frame number is too large!')
@@ -233,14 +233,14 @@ class ped_dataset(common_dataset):
             idx = 1
             for video in sorted(video_dir_list):
                 video_name = video.split('/')[-1]
-                if 'Train' in video_name:
-                    self.videos[video_name] = {}
-                    self.videos[video_name]['path'] = video
-                    self.videos[video_name]['frame'] = glob.glob(os.path.join(video, '*' + self.file_format))
-                    self.videos[video_name]['frame'].sort()
-                    self.videos[video_name]['length'] = len(self.videos[video_name]['frame'])
-                    self.frame_video_idx += [idx] * self.videos[video_name]['length']
-                    idx += 1
+                # if 'Train' in video_name:
+                self.videos[video_name] = {}
+                self.videos[video_name]['path'] = video
+                self.videos[video_name]['frame'] = glob.glob(os.path.join(video, '*' + self.file_format))
+                self.videos[video_name]['frame'].sort()
+                self.videos[video_name]['length'] = len(self.videos[video_name]['frame'])
+                self.frame_video_idx += [idx] * self.videos[video_name]['length']
+                idx += 1
 
             # merge different frames of different videos into one list
             for _, cont in self.videos.items():
@@ -257,8 +257,8 @@ class ped_dataset(common_dataset):
                     self.return_gt = True
                 else:
                     name = dir.split('/')[-1]
-                    if 'Test' in name:
-                        video_dir_list.append(dir)
+                    # if 'Test' in name:
+                    video_dir_list.append(dir)
 
             # load frames for test
             idx = 1
@@ -338,14 +338,14 @@ class avenue_dataset(common_dataset):
                  of_dataset=False):
         super(avenue_dataset, self).__init__()
         self.dir = dir
-        self.mode = mode
+        self.mode = mode # train or test
         self.videos = OrderedDict()
         self.all_frame_addr = list()
         self.frame_video_idx = list()
         self.tot_frame_num = 0
-        self.context_frame_num = context_frame_num
-        self.border_mode = border_mode
-        self.file_format = file_format
+        self.context_frame_num = context_frame_num # 4
+        self.border_mode = border_mode # predict
+        self.file_format = file_format # .jpg
         self.all_bboxes = all_bboxes
         self.patch_size = patch_size
 
@@ -384,7 +384,7 @@ class avenue_dataset(common_dataset):
                 self.videos[video_name]['frame'] = glob.glob(os.path.join(video, '*' + self.file_format))
                 self.videos[video_name]['frame'].sort()
                 self.videos[video_name]['length'] = len(self.videos[video_name]['frame'])
-                self.frame_video_idx += [idx] * self.videos[video_name]['length']
+                self.frame_video_idx += [idx] * self.videos[video_name]['length'] #记录每一帧所属于的video
                 idx += 1
 
             # merge different frames of different videos into one list
@@ -436,7 +436,7 @@ class avenue_dataset(common_dataset):
             return img_batch, torch.zeros(1)
 
         elif self.mode == "test":
-            frame_range = self._context_range(indice=indice)
+            frame_range = self._context_range(indice=indice) # test全为0？
 
             img_batch = []
             for idx in frame_range:
@@ -670,7 +670,7 @@ class shanghaiTech_dataset(Dataset):
 def get_dataset(dataset_name, dir, mode='train', context_frame_num=0, border_mode='hard',
                 all_bboxes=None, patch_size=32, of_dataset=False):
     if not of_dataset:
-        img_ext = {"ped2": ".tif", "avenue": ".jpg", "shanghaitech": ".jpg"}[dataset_name]
+        img_ext = {"ped2": ".jpg", "avenue": ".jpg", "shanghaitech": ".jpg"}[dataset_name]
     else:
         img_ext = ".npy"
 
@@ -725,11 +725,11 @@ class Chunked_sample_dataset(Dataset):
 
         # [#frame,h,w,c] to [h,w,#frame,c]
         x = np.transpose(appearance, [1, 2, 0, 3])
-        x = np.reshape(x, (x.shape[0], x.shape[1], -1))
+        x = np.reshape(x, (x.shape[0], x.shape[1], -1)) # （32,32,15）
 
-        y = motion[1:] if not self.last_flow else motion[-1:]
+        y = motion[1:] if not self.last_flow else motion[-1:] # self.last_flow：最后一帧运动，（1,32,32,2）
         y = np.transpose(y, [1, 2, 0, 3])
-        y = np.reshape(y, (y.shape[0], y.shape[1], -1))
+        y = np.reshape(y, (y.shape[0], y.shape[1], -1)) # （32,32,2）
 
         return self.transform(x), self.transform(y), \
                bbox.astype(np.float32), pred_frame, indice

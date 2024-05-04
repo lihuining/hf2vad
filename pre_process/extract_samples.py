@@ -2,6 +2,8 @@ import argparse
 import os
 import numpy as np
 import joblib
+import sys
+sys.path.append("/media/allenyljiang/564AFA804AFA5BE5/Codes/hf2vad")
 from datasets.dataset import get_dataset, img_batch_tensor2numpy
 
 
@@ -25,7 +27,7 @@ def samples_extraction(dataset_root, dataset_name, mode, all_bboxes, save_dir):
         border_mode="predict", all_bboxes=all_bboxes,
         patch_size=32, of_dataset=False
     )
-
+    # of_dataset决定读取frame还是flow
     # flows dataset
     flow_dataset = get_dataset(
         dataset_name=dataset_name,
@@ -38,8 +40,8 @@ def samples_extraction(dataset_root, dataset_name, mode, all_bboxes, save_dir):
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
 
-    global_sample_id = 0
-    cnt = 0
+    global_sample_id = 0 # 记录sample当前的id
+    cnt = 0 # chunk内部的计数器
     chunk_id = 0  # chunk file id
     chunked_samples = dict(sample_id=[], appearance=[], motion=[], bbox=[], pred_frame=[])
 
@@ -51,7 +53,7 @@ def samples_extraction(dataset_root, dataset_name, mode, all_bboxes, save_dir):
 
         # [num_bboxes,clip_len,C,patch_size, patch_size]
         batch, _ = dataset.__getitem__(idx)
-        flow_batch, _ = flow_dataset.__getitem__(idx)
+        flow_batch, _ = flow_dataset.__getitem__(idx) # [num_bboxes,frames_num,C,patch_size, patch_size]
 
         # all the bboxes in current frame
         cur_bboxes = all_bboxes[idx]
@@ -62,7 +64,7 @@ def samples_extraction(dataset_root, dataset_name, mode, all_bboxes, save_dir):
             # each STC treated as a sample
             for idx_box in range(cur_bboxes.shape[0]):
                 chunked_samples["sample_id"].append(global_sample_id)
-                chunked_samples["appearance"].append(batch[idx_box])
+                chunked_samples["appearance"].append(batch[idx_box]) # img
                 chunked_samples["motion"].append(flow_batch[idx_box])
                 chunked_samples["bbox"].append(cur_bboxes[idx_box])
                 chunked_samples["pred_frame"].append(frameRange[-num_predicted_frame:])  # the frame id of last patch
@@ -98,16 +100,16 @@ def samples_extraction(dataset_root, dataset_name, mode, all_bboxes, save_dir):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--proj_root", type=str, default="/home/liuzhian/hdd4T/code/hf2vad", help='project root path')
-    parser.add_argument("--dataset_name", type=str, default="ped2", help='dataset name')
-    parser.add_argument("--mode", type=str, default="train", help='train or test data')
+    parser.add_argument("--proj_root", type=str, default="/media/allenyljiang/564AFA804AFA5BE5/Codes/hf2vad", help='project root path')
+    parser.add_argument("--dataset_name", type=str, default="avenue", help='dataset name')
+    parser.add_argument("--mode", type=str, default="test", help='train or test data')
 
     args = parser.parse_args()
 
     all_bboxes = np.load(
         os.path.join(args.proj_root, "data", args.dataset_name, '%s_bboxes_%s.npy' % (args.dataset_name, args.mode)),
         allow_pickle=True
-    )
+    ) # array，等于数据集帧数,记录每帧当中的bbox,xyxy
     if args.mode == "train":
         save_dir = os.path.join(args.proj_root, "data", args.dataset_name, "training", "chunked_samples")
     else:
@@ -120,3 +122,6 @@ if __name__ == '__main__':
         all_bboxes=all_bboxes,
         save_dir=save_dir
     )
+'''
+python extract_samples.py --dataset_name shanghaitech --mode train
+'''

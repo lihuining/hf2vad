@@ -81,3 +81,19 @@ class HFVAD(nn.Module):
             out.update(ML_MemAE_SC_dict)
 
         return out
+
+if __name__ == '__main__':
+    import yaml
+    config = yaml.safe_load(open("./cfgs/finetune_cfg.yaml"))
+    model = HFVAD(num_hist=config["model_paras"]["clip_hist"],
+                  num_pred=config["model_paras"]["clip_pred"],
+                  config=config,
+                  features_root=config["model_paras"]["feature_root"],
+                  num_slots=config["model_paras"]["num_slots"],
+                  shrink_thres=config["model_paras"]["shrink_thres"],
+                  mem_usage=config["model_paras"]["mem_usage"],
+                  skip_ops=config["model_paras"]["skip_ops"],
+                  finetune=config["model_paras"]["finetune"])
+    dummy_x = torch.rand(4, 2, 32, 32)
+    dummy_out = model(dummy_x)
+    print(dummy_out.shape)
